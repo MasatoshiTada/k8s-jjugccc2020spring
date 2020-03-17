@@ -1,0 +1,100 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-a-deployment
+  labels:
+    app: echo-a
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo-a
+  template:
+    metadata:
+      labels:
+        app: echo-a
+    spec:
+      containers:
+      - name: echo-a
+        image: mtada/echo-k8s-sample-app:latest
+        ports:
+        - containerPort: 80
+        imagePullPolicy: Always
+        env:
+          - name: APPNAME
+            value: A
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-a-service
+spec:
+  type: ClusterIP
+  selector:
+    app: echo-a
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-b-deployment
+  labels:
+    app: echo-b
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo-b
+  template:
+    metadata:
+      labels:
+        app: echo-b
+    spec:
+      containers:
+      - name: echo-b
+        image: mtada/echo-k8s-sample-app:latest
+        ports:
+        - containerPort: 80
+        imagePullPolicy: Always
+        env:
+          - name: APPNAME
+            value: B
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-b-service
+spec:
+  type: ClusterIP
+  selector:
+    app: echo-b
+  ports:
+  - port: 80
+    targetPort: 80
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1beta1
+metadata:
+  name: echo-ingress
+  labels:
+    app: echo
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  backend: # FIXME なぜかデフォルトのbackendで404
+    serviceName: echo-a-service
+    servicePort: 80
+  rules:
+    - http:
+          paths:
+            - path: /a
+              backend:
+                serviceName: echo-a-service
+                servicePort: 80
+            - path: /b
+              backend:
+                serviceName: echo-b-service
+                servicePort: 80
